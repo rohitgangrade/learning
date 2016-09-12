@@ -1,0 +1,45 @@
+
+# -*- coding: utf-8 -*-
+"""
+@author     Alexander Rüedlinger <a.rueedlinger@gmail.com>
+@date       31.07.2015
+
+"""
+
+
+from pi_switch import RCSwitchReceiver
+import time
+import RPi.GPIO as GPIO
+
+
+LED = 16
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(LED, GPIO.OUT)
+GPIO.output(LED, GPIO.LOW)
+
+
+
+
+
+
+receiver = RCSwitchReceiver()
+
+receiver.enableReceive(2)
+
+receiver.resetAvailable()
+num = 0
+
+while True:
+    if receiver.available():
+        received_value = receiver.getReceivedValue()
+        if received_value:
+            num += 1
+            print("Received[%s]:" % num)
+            print(received_value)
+            print("%s / %s bit" % (received_value, receiver.getReceivedBitlength()))
+            print("Protocol: %s" % receiver.getReceivedProtocol())
+            print("")
+            GPIO.output(LED, GPIO.HIGH)
+            GPIO.output(LED, GPIO.LOW)
+            time.sleep(0.5)
+        receiver.resetAvailable()
