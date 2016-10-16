@@ -2,6 +2,10 @@ import socket
 import sys
 import time
 import RPi.GPIO as GPIO
+import subprocess
+import shlex
+
+DEBUG = 1
 
 LED = 16
 GPIO.setmode(GPIO.BOARD)
@@ -14,7 +18,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Bind the socket to the port
 server_address = ('192.168.1.6', 10000)
-print >>sys.stderr, 'starting up on %s port %s' % server_address
+####print >>sys.stderr, 'starting up on %s port %s' % server_address
 sock.bind(server_address)
 
 # Listen for incoming connections
@@ -33,16 +37,16 @@ STATE = ST_RESET
 while True:
     if STATE == ST_RESET:
         # Wait for a connection
-        print >>sys.stderr, 'waiting for a connection in reset'
+        ####print >>sys.stderr, 'waiting for a connection in reset'
         sock.settimeout(None)
         try:
             connection, client_address = sock.accept()
             try:
-                print >>sys.stderr, 'connection from', client_address
+                ####print >>sys.stderr, 'connection from', client_address
 
                 # Receive the data in small chunks and retransmit it
                 data = connection.recv(16)
-                print >>sys.stderr, 'received "%s"' % data
+                ####print >>sys.stderr, 'received "%s"' % data
 
                 if data == '15':
                     STATE = ST_FIRSTSENSER
@@ -55,16 +59,16 @@ while True:
             STATE = ST_RESET
     elif STATE == ST_FIRSTSENSER:
         # Wait for a connection
-        print >>sys.stderr, 'waiting for a connection in first senser'
+        ####print >>sys.stderr, 'waiting for a connection in first senser'
         sock.settimeout(10)
         try:
             connection, client_address = sock.accept()
             try:
-                print >>sys.stderr, 'connection from', client_address
+                ####print >>sys.stderr, 'connection from', client_address
 
                 # Receive the data in small chunks and retransmit it
                 data = connection.recv(16)
-                print >>sys.stderr, 'received "%s"' % data
+                ####print >>sys.stderr, 'received "%s"' % data
 
                 if data == '16':
                     STATE = ST_SECONDSENSER
@@ -76,20 +80,21 @@ while True:
         except socket.timeout:
             STATE = ST_RESET
     elif STATE == ST_SECONDSENSER:
-        print 'lights up'
+        ####print 'lights up'
+        subprocess.call(shlex.split('./hs100.sh 192.168.1.13 9999 on'))
         GPIO.output(LED, GPIO.HIGH)
         sock.settimeout(None)
         STATE = ST_INSIDE;
     elif STATE == ST_INSIDE:
         try:
-            print >>sys.stderr, 'waiting for a connection inside'
+            ####print >>sys.stderr, 'waiting for a connection inside'
             connection, client_address = sock.accept()
             try:
-                print >>sys.stderr, 'connection from', client_address
+                ####print >>sys.stderr, 'connection from', client_address
 
                 # Receive the data in small chunks and retransmit it
                 data = connection.recv(16)
-                print >>sys.stderr, 'received "%s"' % data
+                ####print >>sys.stderr, 'received "%s"' % data
 
                 if data == '16':
                     STATE = ST_INSIDE_FIRSTSENSER
@@ -102,16 +107,16 @@ while True:
             STATE = ST_INSIDE
     elif STATE == ST_INSIDE_FIRSTSENSER:
         # Wait for a connection
-        print >>sys.stderr, 'waiting for a connection in inside first senser'
+        ####print >>sys.stderr, 'waiting for a connection in inside first senser'
         sock.settimeout(10)
         try:
             connection, client_address = sock.accept()
             try:
-                print >>sys.stderr, 'connection from', client_address
+                ####print >>sys.stderr, 'connection from', client_address
 
                 # Receive the data in small chunks and retransmit it
                 data = connection.recv(16)
-                print >>sys.stderr, 'received "%s"' % data
+                ####print >>sys.stderr, 'received "%s"' % data
 
                 if data == '15':
                     STATE = ST_INSIDE_SECONDSENSER
@@ -121,9 +126,10 @@ while True:
                 # Clean up the connection
                 connection.close()
         except socket.timeout:
-            STATE = ST_INSIDE_FIRSTSENSER;
+            STATE = ST_INSIDE;
     elif STATE == ST_INSIDE_SECONDSENSER:
-        print 'lights down'
+        ####print 'lights down'
+        subprocess.call(shlex.split('./hs100.sh 192.168.1.13 9999 off'))
         GPIO.output(LED, GPIO.LOW)
         sock.settimeout(None)
         STATE = ST_RESET
